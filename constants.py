@@ -1,7 +1,11 @@
 import pygame
+pygame.init()
 
 SCREEN_WIDTH = 1220
 SCREEN_HEIGHT = 680
+
+CENTREX = SCREEN_WIDTH / 2
+CENTREY = SCREEN_HEIGHT / 2
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 COLOURS = [(255, 0, 0),         #RED   
            (0, 255, 255),       #CYAN
