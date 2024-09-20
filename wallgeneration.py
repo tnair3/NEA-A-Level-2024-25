@@ -1,6 +1,6 @@
 import pygame
 import constants
-
+pygame.init()
 
 class Wall():
     def __init__(self, spawnx, spawny, width, height, colour=constants.COLOURS[constants.BLUE]):
@@ -8,22 +8,14 @@ class Wall():
         self.spawny = spawny
         self.width = width
         self.height = height
-        self.rightborder = self.spawnx + self.width
-        self.bottomborder = self.spawny + self.height
         self.colour = colour
         self.wall = pygame.Rect(self.spawnx, self.spawny, self.width, self.height)
     
-    def getleftboundary(self):
-        return self.spawnx
+    def getXPositions(self):
+        return self.positionsTop, self.positionsBottom
     
-    def getrightboundary(self):
-        return self.rightborder
-    
-    def gettopboundary(self):
-        return self.spawny
-    
-    def getbottomboundary(self):
-        return self.bottomborder
+    def getYPositions(self):
+        return self.positionsLeft, self.positionsRight
 
 def drawborderwalls():
     pygame.draw.rect(constants.screen, constants.COLOURS[constants.BLUE], walls[0][0].wall)
@@ -34,5 +26,5 @@ def drawborderwalls():
 walls = [[Wall(0, 0, constants.SCREEN_WIDTH, 32),                               #TOP    0
           Wall(0, constants.SCREEN_HEIGHT - 32 , constants.SCREEN_WIDTH, 32),   #BOTTOM 1
           Wall(0, 0, 32, constants.SCREEN_HEIGHT),                              #LEFT   2
-          Wall(constants.SCREEN_WIDTH - 32, 0, 32, constants.SCREEN_HEIGHT)     #RIGHT  3
-          ]]
+          Wall(constants.SCREEN_WIDTH - 32, 0, 32, constants.SCREEN_HEIGHT)]    #RIGHT  3
+         ]
