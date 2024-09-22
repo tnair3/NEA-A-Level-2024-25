@@ -904,7 +904,7 @@ flicker = False
 counter = 0
 
 score = 0
-lives = 5
+lives = 3
 powerup = False
 powertimer = 0
 eatenghosts = [False, False, False, False]
