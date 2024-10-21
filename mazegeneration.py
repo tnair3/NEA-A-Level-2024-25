@@ -1,6 +1,4 @@
 import pygame; pygame.init()
-import numpy as np
-from enum import Enum
 
 import constants
 from constants import SCREEN_HEIGHT as HEIGHT
@@ -10,12 +8,6 @@ from constants import clock as clock
 from constants import COLOURS as COLOURS
 from constants import indentx as indentx
 from constants import indenty as indenty
-
-class CellType(Enum):
-    empty = 0
-    solid = 1
-    pellet = 2
-    powerpellet = 3
 
 class Cell:
     def __init__(self, x, y):
@@ -44,13 +36,13 @@ def generategrid(level):
                 cellnum = (column * 21) + (row)
                 x, y = cells[cellnum].receivevar()
 
-                if row + 1 < mazesize and level[row + 1][column] == 1: #DOWN
+                if row + 1 < mazesize and (level[row + 1][column] == 1 or level[row + 1][column] == 9): #DOWN
                     cells[cellnum].walls["bottom"] = False
-                if row - 1 >= 0 and level[row - 1][column] == 1: #UP
+                if row - 1 >= 0 and (level[row - 1][column] == 1 or level[row - 1][column] == 9): #UP
                     cells[cellnum].walls["top"] = False
-                if column + 1 < rowsize and (level[row][column + 1] == 1 or level[row][column + 1] == 2): #RIGHT
+                if column + 1 < rowsize and (level[row][column + 1] == 1 or level[row][column + 1] == 2 or level[row][column + 1] == 9): #RIGHT
                     cells[cellnum].walls["right"] = False
-                if column - 1 < rowsize and (level[row][column - 1] == 1 or level[row][column - 1] == 2): #LEFT
+                if column - 1 < rowsize and (level[row][column - 1] == 1 or level[row][column - 1] == 2 or level[row][column - 1] == 9): #LEFT
                     cells[cellnum].walls["left"] = False
                 
                 if row + 1 >= mazesize: #DOWN
@@ -77,12 +69,43 @@ def generategrid(level):
                 
                 sc.blit(mazeelements[spriteuse], (x, y))
 
+def defaultpelletspawn(maze):
+    row = len(maze)
+    col = len(maze[0])
+    for i in range(row):
+        for j in range(col):
+            if maze[i][j] == 1 and not (i == 9 and (j == 8 or j == 9 or j == 10)):
+                maze[i][j] = 3
+    
+    return maze
 
 
+def generatepellets(level):
+    row = len(level)
+    col = len(level[0])
+    for i in range(row):
+        for j in range(col):
+            if level[i][j] == 3:
+                xpos, ypos = (j * 45) + indentx + 7, (i * 45) + indenty + 7
+                sc.blit(pellets[0], (xpos, ypos))
+            if level[i][j] == 9:
+                xpos, ypos = (j * 45) + indentx + 7, (i * 45) + indenty + 7
+                sc.blit(pellets[1], (xpos, ypos))
+
+    row = len(level)
+    col = len(level[0])
+    for i in range(row):
+        for j in range(col):
+            if level[i][j] == 3 and not (i == 9 and (j == 8 or j == 9 or j == 10)):
+                level[i][j] = 1
 
 mazeelements = []
 for i in range(0, 17):
     mazeelements.append(pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall{i}.png'), (45, 45)))
+
+pellets = []
+pellets.append(pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/pellet.png'), (32, 32)))
+pellets.append(pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/powerpellet.png'), (32, 32)))
 
 run = True
 i = 0
@@ -95,7 +118,7 @@ classic = [
             [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
             [0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0],
-            [0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0],
+            [0, 9, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 9, 0],
             [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0, 0, 1, 0, 1, 0, 0, 0, 0],
@@ -103,7 +126,7 @@ classic = [
             [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 9, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 9, 0],
             [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
             [0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0],
             [0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0],
@@ -111,5 +134,27 @@ classic = [
             [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-cells = []
 
+mazetemplate = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+cells = []
