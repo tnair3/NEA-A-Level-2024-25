@@ -59,7 +59,7 @@ class Pacman:
             #Player2 = 1
         
         #x, y
-            #Centre of hitbox
+            #Top left of hitbox
 
         #Direction
             #Up = 0
@@ -168,19 +168,19 @@ class Pacman:
         sc.blit(self.deadframes[self.deathframenum], (self.x, self.y))
         if self.deathcounter < 6:
             self.deathcounter += 1
-            return False, self.deathcounter, self.deathframenum
+            return self.alive, self.deathcounter, self.deathframenum
         else:
             self.deathcounter = 0
             if self.deathframenum < 9:
                 self.deathframenum += 1
-                return False, self.deathcounter, self.deathframenum
+                return self.alive, self.deathcounter, self.deathframenum
             else:
                 self.alive = True
                 self.deathframenum = 0
-                return True, self.deathcounter, self.deathframenum
+                return self.alive, self.deathcounter, self.deathframenum
 
 class Ghost:
-    def __init__(self, ghostid, x, y, target, speed, dead, inbox, imgs, directionarray):
+    def __init__(self, ghostid, x, y, target, speed, dead, inbox, imgs, directionarray, direction):
         self.GhostID = ghostid
         self.posx, self.posy = x, y
         self.index_x, self.index_y = (x - constants.indentx) // 45, (y - constants.indenty) // 45
@@ -189,10 +189,12 @@ class Ghost:
         self.dead = dead
         self.in_box = inbox
         self.imgs = imgs
+        self.direction = direction
         self.pathmatrix = levelghostfinder
         self.pathdirections = directionarray
         self.turns = [False, False, False, False]
-        self.hitbox = pygame.draw.circle(sc, constants.COLOURS[constants.BLACK], (self.posx + 20, self.posy + 20), 20, 1)
+        self.hitbox = pygame.rect.Rect(self.posx + 5, self.posy + 5, 30, 30)
+        pygame.draw.rect(sc, constants.COLOURS[constants.BLACK], self.hitbox)
 
         def explanations():
             #GhostID:
@@ -258,74 +260,57 @@ class Ghost:
         self.pathmatrix = findpath(self.pathmatrix, graph, startnode, endnode)
         self.pathmatrix[endposy][endposx] = 3
         self.pathdirections = findpathdirections(self.pathmatrix, startx, starty, endposx, endposy)
+        self.pathmatrix[starty][startx] = 1
 
         return self.pathmatrix, self.pathdirections
     
     def checkpos(self):
         validmatrixval = [3]
         #playerindex = [y][x]
-        topleftx, toplefty = self.posx, self.posy
-        toprightx, toprighty = self.posx + 40, self.posy
-        bottomleftx, bottomlefty = self.posx, self.posy + 40
-        bottomrightx, bottomrighty = self.posx + 40, self.posy + 40
+        posy, posx = self.posy + 20, self.posx + 20
+        indexy, indexx = self.getindex()
+        currentcellposy, currentcellposx = (indexy * 45) + constants.indenty + 23, (indexx * 45) + constants.indentx + 22
+        nextindexy, nextindexx = self.pathdirections[0][0], self.pathdirections[0][1]
+        cellposy, cellposx = (nextindexy * 45) + constants.indenty + 23, (nextindexx * 45) + constants.indentx + 22
 
-        topleftx, toplefty = (topleftx - constants.indentx) // 45, (toplefty - constants.indenty) // 45
-        toprightx, toprighty = (toprightx - constants.indentx) // 45, (toprighty - constants.indenty) // 45
-        bottomleftx, bottomlefty = (bottomleftx - constants.indentx) // 45, (bottomlefty - constants.indenty) // 45
-        bottomrightx, bottomrighty = (bottomrightx - constants.indentx) // 45, (bottomrighty - constants.indenty) // 45
+        if (posy == currentcellposy or posx == currentcellposx) and (self.direction == 0 or self.direction == 2):
+            if cellposx != posx:
+                self.direction = 1
+        if (posy == currentcellposy or posx == currentcellposx) and (self.direction == 1 or self.direction == 3):
+            if cellposy != posy:
+                self.direction = 0
 
-        if self.pathdirections[0][2] == 0:
-            if self.pathmatrix[bottomlefty - 1][bottomleftx] in validmatrixval and self.pathmatrix[bottomrighty - 1][bottomrightx] in validmatrixval:
+        if self.direction == 0 or self.direction == 2:
+            if posy > cellposy:
                 self.turns[0] = True
-            else:
-                if not self.pathmatrix[bottomlefty - 1][bottomleftx] in validmatrixval:
-                    self.turns[1] = True
-                elif not self.pathmatrix[bottomrighty - 1][bottomrightx] in validmatrixval:
-                    self.turns[3] = True
-
-        if self.pathdirections[0][2] == 1:
-            if self.pathmatrix[bottomlefty][bottomleftx + 1] in validmatrixval and self.pathmatrix[toplefty][topleftx + 1] in validmatrixval:
-                self.turns[1] = True
-            else:
-                if not self.pathmatrix[bottomlefty][bottomleftx + 1] in validmatrixval:
-                    self.turns[0] = True
-                elif not self.pathmatrix[toplefty][topleftx + 1] in validmatrixval:
-                    self.turns[2] = True
-
-        if self.pathdirections[0][2] == 2:
-            if self.pathmatrix[toplefty + 1][topleftx] in validmatrixval and self.pathmatrix[toprighty + 1][toprightx] in validmatrixval:
+            if posy < cellposy:
                 self.turns[2] = True
-            else:
-                if not self.pathmatrix[toplefty + 1][topleftx] in validmatrixval:
-                    self.turns[1] = True
-                elif not self.pathmatrix[toprighty + 1][toprightx] in validmatrixval:
-                    self.turns[3] = True
-
-        if self.pathdirections[0][2] == 3:
-            if self.pathmatrix[bottomrighty][bottomrightx - 1] in validmatrixval and self.pathmatrix[toprighty][toprightx - 1] in validmatrixval:
+        if self.direction == 1 or self.direction == 3:
+            if posx < cellposx:
+                self.turns[1] = True
+            if posx > cellposx:
                 self.turns[3] = True
-            else:
-                if not self.pathmatrix[bottomrighty][bottomrightx - 1] in validmatrixval:
-                    self.turns[0] = True
-                elif not self.pathmatrix[toprighty][toprightx - 1] in validmatrixval:
-                    self.turns[2] = True
 
     def move(self):
         self.checkpos()
         if self.turns[0]:
             self.posy -= self.speed
-            return self.posx, self.posy
+            self.direction = 0
+            return self.posx, self.posy, self.direction
         if self.turns[1]:
             self.posx += self.speed
-            return self.posx, self.posy
+            self.direction = 1
+            return self.posx, self.posy, self.direction
         if self.turns[2]:
             self.posy += self.speed
-            return self.posx, self.posy
+            self.direction = 2
+            return self.posx, self.posy, self.direction
         if self.turns[3]:
             self.posx -= self.speed
-            return self.posx, self.posy
+            self.direction = 3
+            return self.posx, self.posy, self.direction
         
-        return self.posx, self.posy
+        return self.posx, self.posy, self.direction
 
 #SUBROUTINES ============================================================================================================================================================================================================================================
 #Get image subroutines
@@ -433,6 +418,7 @@ def findpathdirections(array, startx, starty, endx, endy):
             if array[i][j] == 5:
                 array[i][j] = 3
     
+    directionsqueue.get()
     return list(directionsqueue.queue)
 
 #Displaying in-game UI
@@ -523,6 +509,7 @@ ghostposy = [415, 415, 415, 415]
 ghosttargets = [0, 0, 0, 0]
 ghostspeeds = [2, 2, 2, 2]
 deadghosts = [False, False, False, False]
+ghostdirections = [0, 0, 0, 0]
 inboxes = [True, True, True, True]
 
 ghostimages = loadghostimages()
@@ -556,13 +543,16 @@ while run:
     pelletsmaze = mazegeneration.defaultpelletspawn(level)
     mazegeneration.generatepellets(pelletsmaze)
 
+    #OBJECTS GENERATION
     pacP1 = Pacman(0, playerposx, playerposy, playerdirections, playerdirectioncommands, playerlives, playerscore, pacframes(), pacdeadframes(), playersalive, deathcounter, deadframenum)
-    blinky = Ghost(0, ghostposx[0], ghostposy[0], ghosttargets[0], ghostspeeds[0], deadghosts[0], inboxes[0], ghostimages, previousdirectionarrayblinky)
-    pinky = Ghost(1, ghostposx[1], ghostposy[1], ghosttargets[1], ghostspeeds[1], deadghosts[1], inboxes[1], ghostimages, previousdirectionarraypinky)
-    inky = Ghost(2, ghostposx[2], ghostposy[2], ghosttargets[2], ghostspeeds[2], deadghosts[2], inboxes[2], ghostimages, previousdirectionarrayinky)
-    clyde = Ghost(3, ghostposx[3], ghostposy[3], ghosttargets[3], ghostspeeds[3], deadghosts[3], inboxes[3], ghostimages, previousdirectionarrayclyde)
+    if playersalive:
+        blinky = Ghost(0, ghostposx[0], ghostposy[0], ghosttargets[0], ghostspeeds[0], deadghosts[0], inboxes[0], ghostimages, previousdirectionarrayblinky, ghostdirections[0])
+        pinky = Ghost(1, ghostposx[1], ghostposy[1], ghosttargets[1], ghostspeeds[1], deadghosts[1], inboxes[1], ghostimages, previousdirectionarraypinky, ghostdirections[1])
+        inky = Ghost(2, ghostposx[2], ghostposy[2], ghosttargets[2], ghostspeeds[2], deadghosts[2], inboxes[2], ghostimages, previousdirectionarrayinky, ghostdirections[2])
+        clyde = Ghost(3, ghostposx[3], ghostposy[3], ghosttargets[3], ghostspeeds[3], deadghosts[3], inboxes[3], ghostimages, previousdirectionarrayclyde, ghostdirections[3])
 
-    if regulateloop == 12:
+    #PATHFINDING
+    if regulateloop == 12 and playersalive:
         if not powerup:
             pacindx_x, pacindx_y = pacP1.getindex()
 
@@ -588,11 +578,11 @@ while run:
             print()
         elif powerup:
             pass
-
         regulateloop = 0
     else:
         regulateloop += 1
 
+    #STARTUP TIMER
     if starttimer > 0:
         displaystarttimer(starttimer)
         starttimer -= 1
@@ -600,6 +590,7 @@ while run:
     else:
         movementallowed = True
 
+    #MOVING
     if movementallowed and playersalive:
         if playerdirections == 0:
             playerposy += pacP1.move(level)
@@ -610,12 +601,12 @@ while run:
         if playerdirections == 3:
             playerposx += pacP1.move(level)
         
-        ghostposx[0], ghostposy[0] = blinky.move()
-        ghostposx[1], ghostposy[1] = pinky.move()
-        ghostposx[2], ghostposy[2] = inky.move()
-        ghostposx[3], ghostposy[3] = clyde.move()
+        ghostposx[0], ghostposy[0], ghostdirections[0] = blinky.move()
+        ghostposx[1], ghostposy[1], ghostdirections[1] = pinky.move()
+        ghostposx[2], ghostposy[2], ghostdirections[2] = inky.move()
+        ghostposx[3], ghostposy[3], ghostdirections[3] = clyde.move()
 
-    #pacmanframeticker
+    #PACMAN FRAME TICKER
     if playersalive:
         if counter < 6:
             counter += 1
@@ -626,6 +617,8 @@ while run:
             else:
                 pacframenum = 0
 
+    #GENERATING
+    if playersalive:
         pacP1.generate()
         blinky.generate()
         pinky.generate()
@@ -635,9 +628,10 @@ while run:
     if not playersalive:
         playersalive, deathcounter, deadframenum = pacP1.deathgeneration()
 
-    playersalive= pacP1.checkcollision(blinky, pinky, inky, clyde)
+    if playersalive:
+        playersalive = pacP1.checkcollision(blinky, pinky, inky, clyde)
 
-    #event handler
+    #EVENT HANDLER
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
@@ -663,6 +657,7 @@ while run:
             if event.key == pygame.K_a:
                 playerdirectioncommands = playerdirections
 
+    #MOVING
     validturnsP1 = pacP1.checkpos(level)
     if playerdirectioncommands == 0 and validturnsP1[0]:
         playerdirections = pacP1.directionchange("w", level)
@@ -673,10 +668,10 @@ while run:
     if playerdirectioncommands == 3 and validturnsP1[3]:
         playerdirections = pacP1.directionchange("a", level)
 
+    #PELLET CONSUMPTION
     positionx, positiony, playerscore, powerup = pacP1.consumepellet(level, powerup)
     if positionx != 0 and positiony != 0:
         level[positiony][positionx] = 4
-
     if powerup:
         displaypoweruptimer(poweruptimer)
         poweruptimer -= 1
