@@ -51,7 +51,7 @@ class Pacman:
         self.deathcounter = deathcounter
         self.deathframenum = deadframenum
 
-        self.hitbox = pygame.rect.Rect(self.x + 5, self.y + 5, 30, 30)
+        self.hitbox = pygame.rect.Rect(self.x + 2, self.y + 2, 36, 36)
         pygame.draw.rect(sc, constants.COLOURS[constants.BLACK], self.hitbox)
 
         #PacID
@@ -168,16 +168,16 @@ class Pacman:
         sc.blit(self.deadframes[self.deathframenum], (self.x, self.y))
         if self.deathcounter < 6:
             self.deathcounter += 1
-            return self.alive, self.deathcounter, self.deathframenum
+            return self.alive, self.deathcounter, self.deathframenum, False
         else:
             self.deathcounter = 0
-            if self.deathframenum < 9:
+            if self.deathframenum < 15:
                 self.deathframenum += 1
-                return self.alive, self.deathcounter, self.deathframenum
+                return self.alive, self.deathcounter, self.deathframenum, False
             else:
                 self.alive = True
                 self.deathframenum = 0
-                return self.alive, self.deathcounter, self.deathframenum
+                return self.alive, self.deathcounter, self.deathframenum, True
 
 class Ghost:
     def __init__(self, ghostid, x, y, target, speed, dead, inbox, imgs, directionarray, direction):
@@ -193,7 +193,7 @@ class Ghost:
         self.pathmatrix = levelghostfinder
         self.pathdirections = directionarray
         self.turns = [False, False, False, False]
-        self.hitbox = pygame.rect.Rect(self.posx + 5, self.posy + 5, 30, 30)
+        self.hitbox = pygame.rect.Rect(self.posx + 2, self.posy + 2, 36, 36)
         pygame.draw.rect(sc, constants.COLOURS[constants.BLACK], self.hitbox)
 
         def explanations():
@@ -270,7 +270,17 @@ class Ghost:
         posy, posx = self.posy + 20, self.posx + 20
         indexy, indexx = self.getindex()
         currentcellposy, currentcellposx = (indexy * 45) + constants.indenty + 23, (indexx * 45) + constants.indentx + 22
-        nextindexy, nextindexx = self.pathdirections[0][0], self.pathdirections[0][1]
+        try:
+            nextindexy, nextindexx = self.pathdirections[0][0], self.pathdirections[0][1]
+        except:
+            if self.direction == 0:
+                nextindexy, nextindexx = indexy - 1, indexx
+            if self.direction == 1:
+                nextindexy, nextindexx = indexy, indexx + 1
+            if self.direction == 2:
+                nextindexy, nextindexx = indexy + 1, indexx
+            if self.direction == 3:
+                nextindexy, nextindexx = indexy, indexx - 1
         cellposy, cellposx = (nextindexy * 45) + constants.indenty + 23, (nextindexx * 45) + constants.indentx + 22
 
         if (posy == currentcellposy or posx == currentcellposx) and (self.direction == 0 or self.direction == 2):
@@ -327,7 +337,7 @@ def pacframes():
 
 def pacdeadframes():
     pacdeadframes = []
-    for i in range(1, 11):
+    for i in range(1, 17):
         pacdeadframes.append(pygame.transform.scale(pygame.image.load(f"sprites/pacman/pacdead{i}.png"), (40, 40)))
     
     return pacdeadframes
@@ -491,6 +501,7 @@ poweruptimer = 599
 collision = False
 deathcounter = 0
 deadframenum = 0
+respawn = False
 
 paclives = pygame.transform.scale(pygame.image.load(f"sprites/pacman/paclives.png"), (25, 25))
 pacframenum = 0
@@ -542,6 +553,34 @@ while run:
     displaystats()
     pelletsmaze = mazegeneration.defaultpelletspawn(level)
     mazegeneration.generatepellets(pelletsmaze)
+
+    if respawn:
+        playertimer = 180
+        playersalive = True
+        playerlives -= 1
+        playerposx = 415
+        playerposy = 685
+        playerdirections = 3
+        playerdirectioncommands = 3
+        playersalive = True
+        powerup = False
+        poweruptimer = 599
+        collision = False
+        deathcounter = 0
+        deadframenum = 0
+        respawn = False
+
+        ghostposx = [370, 400, 430, 460]
+        ghostposy = [415, 415, 415, 415]
+        ghosttargets = [0, 0, 0, 0]
+        ghostspeeds = [2, 2, 2, 2]
+        deadghosts = [False, False, False, False]
+        ghostdirections = [0, 0, 0, 0]
+        inboxes = [True, True, True, True]
+
+        regulateloop = 0
+        starttimer = 180
+        movementallowed = False
 
     #OBJECTS GENERATION
     pacP1 = Pacman(0, playerposx, playerposy, playerdirections, playerdirectioncommands, playerlives, playerscore, pacframes(), pacdeadframes(), playersalive, deathcounter, deadframenum)
@@ -626,7 +665,7 @@ while run:
         clyde.generate()
 
     if not playersalive:
-        playersalive, deathcounter, deadframenum = pacP1.deathgeneration()
+        playersalive, deathcounter, deadframenum, respawn = pacP1.deathgeneration()
 
     if playersalive:
         playersalive = pacP1.checkcollision(blinky, pinky, inky, clyde)
