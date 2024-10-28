@@ -193,7 +193,7 @@ class Ghost:
         self.pathmatrix = levelghostfinder
         self.pathdirections = directionarray
         self.turns = [False, False, False, False]
-        self.hitbox = pygame.rect.Rect(self.posx + 2, self.posy + 2, 36, 36)
+        self.hitbox = pygame.rect.Rect(self.posx + 6, self.posy + 6, 28, 28)
         pygame.draw.rect(sc, constants.COLOURS[constants.BLACK], self.hitbox)
 
         def explanations():
@@ -264,45 +264,60 @@ class Ghost:
 
         return self.pathmatrix, self.pathdirections
     
-    def checkpos(self):
-        validmatrixval = [3]
-        #playerindex = [y][x]
-        posy, posx = self.posy + 20, self.posx + 20
-        indexy, indexx = self.getindex()
-        currentcellposy, currentcellposx = (indexy * 45) + constants.indenty + 23, (indexx * 45) + constants.indentx + 22
-        try:
-            nextindexy, nextindexx = self.pathdirections[0][0], self.pathdirections[0][1]
-        except:
-            if self.direction == 0:
-                nextindexy, nextindexx = indexy - 1, indexx
-            if self.direction == 1:
-                nextindexy, nextindexx = indexy, indexx + 1
-            if self.direction == 2:
-                nextindexy, nextindexx = indexy + 1, indexx
-            if self.direction == 3:
-                nextindexy, nextindexx = indexy, indexx - 1
-        cellposy, cellposx = (nextindexy * 45) + constants.indenty + 23, (nextindexx * 45) + constants.indentx + 22
+    def checkpos(self, powerup, pacobj):
+        if not powerup:
+            validmatrixval = [3]
+            #playerindex = [y][x]
+            posy, posx = self.posy + 20, self.posx + 20
+            indexy, indexx = self.getindex()
+            currentcellposy, currentcellposx = (indexy * 45) + constants.indenty + 23, (indexx * 45) + constants.indentx + 22
+            try:
+                nextindexy, nextindexx = self.pathdirections[0][0], self.pathdirections[0][1]
+            except:
+                if self.direction == 0:
+                    nextindexy, nextindexx = indexy - 1, indexx
+                if self.direction == 1:
+                    nextindexy, nextindexx = indexy, indexx + 1
+                if self.direction == 2:
+                    nextindexy, nextindexx = indexy + 1, indexx
+                if self.direction == 3:
+                    nextindexy, nextindexx = indexy, indexx - 1
+            cellposy, cellposx = (nextindexy * 45) + constants.indenty + 23, (nextindexx * 45) + constants.indentx + 22
 
-        if (posy == currentcellposy or posx == currentcellposx) and (self.direction == 0 or self.direction == 2):
-            if cellposx != posx:
-                self.direction = 1
-        if (posy == currentcellposy or posx == currentcellposx) and (self.direction == 1 or self.direction == 3):
-            if cellposy != posy:
-                self.direction = 0
+            if (posy == currentcellposy or posx == currentcellposx) and (self.direction == 0 or self.direction == 2):
+                if cellposx != posx:
+                    self.direction = 1
+            if (posy == currentcellposy or posx == currentcellposx) and (self.direction == 1 or self.direction == 3):
+                if cellposy != posy:
+                    self.direction = 0
 
-        if self.direction == 0 or self.direction == 2:
-            if posy > cellposy:
+            if self.direction == 0 or self.direction == 2:
+                if posy > cellposy:
+                    self.turns[0] = True
+                if posy < cellposy:
+                    self.turns[2] = True
+            if self.direction == 1 or self.direction == 3:
+                if posx < cellposx:
+                    self.turns[1] = True
+                if posx > cellposx:
+                    self.turns[3] = True
+        if powerup:
+            for i in range(0, len(self.pathmatrix)):
+                for j in range(0, len(self.pathmatrix[i])):
+                    if self.pathmatrix[i][j] == 1 or self.pathmatrix[i][j] == 9:
+                        self.pathmatrix[i][j] = 3
+            pacindx_x, pacindx_y = pacobj.getindex()
+            if self.posy < pacindx_y and self.pathmatrix[self.index_y - 1][self.index_x] == 3:
                 self.turns[0] = True
-            if posy < cellposy:
-                self.turns[2] = True
-        if self.direction == 1 or self.direction == 3:
-            if posx < cellposx:
+            if self.posx > pacindx_x and self.pathmatrix[self.index_y][self.index_x + 1] == 3:
                 self.turns[1] = True
-            if posx > cellposx:
+            if self.posy > pacindx_y and self.pathmatrix[self.index_y + 1][self.index_x] == 3:
+                self.turns[2] = True
+            if self.posx < pacindx_x and self.pathmatrix[self.index_y][self.index_x - 1] == 3:
                 self.turns[3] = True
 
-    def move(self):
-        self.checkpos()
+    def move(self, powerup, pacobj):
+        self.checkpos(powerup, pacobj)
         if self.turns[0]:
             self.posy -= self.speed
             self.direction = 0
@@ -461,7 +476,9 @@ def displaygameendmenu():
     text = font.render(f'Pacman', True, constants.COLOURS[constants.YELLOW])
     quittext = font.render(f'Press SPACE to Quit', True, constants.COLOURS[constants.WHITE])
     timer = time // 60
-    if timer // 60 == 1:
+    if timer // 60 == 0:
+        timertext = font.render(f'{timer % 60} seconds', True, constants.COLOURS[constants.WHITE])
+    elif timer // 60 == 1:
         timertext = font.render(f'{timer // 60} minute, {timer % 60} seconds', True, constants.COLOURS[constants.WHITE])
     else:
         timertext = font.render(f'{timer // 60} minutes, {timer % 60} seconds', True, constants.COLOURS[constants.WHITE])
@@ -493,7 +510,7 @@ pacframes = [
     pygame.transform.scale(pygame.image.load(f"sprites/pacman/pac4.png"), (40, 40)),
     pygame.transform.scale(pygame.image.load(f"sprites/pacman/pac3.png"), (40, 40)),
     pygame.transform.scale(pygame.image.load(f"sprites/pacman/pac2.png"), (40, 40))
-]
+    ]
 
 pacdeadframes = [
     pygame.transform.scale(pygame.image.load(f"sprites/pacman/pacdead1.png"), (40, 40)),
@@ -512,7 +529,7 @@ pacdeadframes = [
     pygame.transform.scale(pygame.image.load(f"sprites/pacman/pacdead13.png"), (40, 40)),
     pygame.transform.scale(pygame.image.load(f"sprites/pacman/pacdead13.png"), (40, 40)),
     pygame.transform.scale(pygame.image.load(f"sprites/pacman/pacdead13.png"), (40, 40))
-]
+    ]
 
 controls = [
     pygame.transform.scale(pygame.image.load(f"sprites/playercontrols/winactive.png"), (32, 32)),
@@ -626,7 +643,7 @@ while run:
         time += 1
         displaystats()
         #OBJECTS GENERATION
-        pacP1 = Pacman(0, playerposx, playerposy, playerdirections, playerdirectioncommands, playerlives, playerscore, pacframes(), pacdeadframes(), playersalive, deathcounter, deadframenum)
+        pacP1 = Pacman(0, playerposx, playerposy, playerdirections, playerdirectioncommands, playerlives, playerscore, pacframes, pacdeadframes, playersalive, deathcounter, deadframenum)
         if playersalive:
             blinky = Ghost(0, ghostposx[0], ghostposy[0], ghosttargets[0], ghostspeeds[0], deadghosts[0], inboxes[0], ghostimages, previousdirectionarrayblinky, ghostdirections[0])
             pinky = Ghost(1, ghostposx[1], ghostposy[1], ghosttargets[1], ghostspeeds[1], deadghosts[1], inboxes[1], ghostimages, previousdirectionarraypinky, ghostdirections[1])
@@ -683,10 +700,10 @@ while run:
             if playerdirections == 3:
                 playerposx += pacP1.move(level)
             
-            ghostposx[0], ghostposy[0], ghostdirections[0] = blinky.move()
-            ghostposx[1], ghostposy[1], ghostdirections[1] = pinky.move()
-            ghostposx[2], ghostposy[2], ghostdirections[2] = inky.move()
-            ghostposx[3], ghostposy[3], ghostdirections[3] = clyde.move()
+            ghostposx[0], ghostposy[0], ghostdirections[0] = blinky.move(powerup, pacP1)
+            ghostposx[1], ghostposy[1], ghostdirections[1] = pinky.move(powerup, pacP1)
+            ghostposx[2], ghostposy[2], ghostdirections[2] = inky.move(powerup, pacP1)
+            ghostposx[3], ghostposy[3], ghostdirections[3] = clyde.move(powerup, pacP1)
 
         #PACMAN FRAME TICKER
         if playersalive:
@@ -694,7 +711,7 @@ while run:
                 counter += 1
             else:
                 counter = 0
-                if pacframenum < 6:
+                if pacframenum < 5:
                     pacframenum += 1
                 else:
                     pacframenum = 0
