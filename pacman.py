@@ -487,7 +487,7 @@ def displaystarttimer(val):
 
 def displaygameendmenu():
     gameovertext = font.render(f'Game Over', True, constants.COLOURS[constants.DARKRED])
-    scoretext = font.render(f'Score: {playerscore}', True, constants.COLOURS[constants.WHITE])
+    scoretext = font.render(f'Score: {int(playerscore)}', True, constants.COLOURS[constants.WHITE])
     text = font.render(f'Pacman', True, constants.COLOURS[constants.YELLOW])
     quittext = font.render(f'Press ESCAPE to Quit', True, constants.COLOURS[constants.WHITE])
     timer = time // 60
@@ -509,7 +509,27 @@ def displaygameendmenu():
     sc.blit(quittext, (250, 500))
 
 def displaygamewonmenu():
-    pass
+    gamewontext = font.render(f'Maze Cleared', True, constants.COLOURS[constants.GREEN])
+    scoretext = font.render(f'Score: {int(playerscore)}', True, constants.COLOURS[constants.WHITE])
+    text = font.render(f'Pacman', True, constants.COLOURS[constants.YELLOW])
+    continuetext = font.render(f'Press SPACEBAR to Continue', True, constants.COLOURS[constants.WHITE])
+    timer = time // 60
+    if timer // 60 == 0:
+        timertext = font.render(f'{timer % 60} seconds', True, constants.COLOURS[constants.WHITE])
+    elif timer // 60 == 1:
+        timertext = font.render(f'{timer // 60} minute, {timer % 60} seconds', True, constants.COLOURS[constants.WHITE])
+    else:
+        timertext = font.render(f'{timer // 60} minutes, {timer % 60} seconds', True, constants.COLOURS[constants.WHITE])
+    outlinerect = pygame.rect.Rect(215, 365, 580, 195)
+    bgrect = pygame.rect.Rect(225, 375, 560, 175)
+    pygame.draw.rect(sc, constants.COLOURS[constants.GREY], outlinerect, border_radius = 12)
+    pygame.draw.rect(sc, constants.COLOURS[constants.LIGHTGREY], bgrect, border_radius = 10)
+
+    sc.blit(text, (250, 400))
+    sc.blit(gamewontext, (250, 425))
+    sc.blit(scoretext, (250, 450))
+    sc.blit(timertext, (250, 475))
+    sc.blit(continuetext, (250, 500))
 
 #LOADING IMAGES =========================================================================================================================================================================================================================================
 normalghostframes = [
@@ -689,15 +709,16 @@ pacvulnerable = True
 scoremultiplier = 1
 reversecontrols = False
 invisibleghosts = False
-vulnerableghosts = False
 teleportghosts = False
 effect = False
 
 classicmaze = False
 if classicmaze:
-    level = classic
+    leveltemp = classic
+    level = deepcopy(leveltemp)
 else:
-    level = mazegeneration.createmaze(mazegeneration.mazetemplate)
+    leveltemp = mazegeneration.createmaze(mazegeneration.mazetemplate)
+    level = deepcopy(leveltemp)
 
 levelghostfinder = deepcopy(level)
 
@@ -705,6 +726,8 @@ starttimer = 180
 
 graphoflevel = creategraph(levelghostfinder)
 regulateloop = 0
+
+continuelevel = False
 
 previousdirectionarrayblinky = []
 previousdirectionarraypinky = []
@@ -764,7 +787,7 @@ while run:
             False,  #PLAYERSLOW             5
             False,  #REVERSECONTROLS        6
             False,  #INVISIBLEGHOSTS        7
-            False,  #GHOSTSVULNERABLE       8
+            None,   #ONEUP                  8
             False,  #PLAYERSTUN             9
             False,  #HALFSCORE              10
             None,   #TELEPORTGHOSTSTOBOX    11
@@ -780,9 +803,12 @@ while run:
         scoremultiplier = 1
         reversecontrols = False
         invisibleghosts = False
-        vulnerableghosts = False
         teleportghosts = False
         effect = False
+        pacspeed = 2
+
+        usedframes = pacframes
+        ghostimages = normalghostframes
     
         if playerlives >= 0:
             playersalive = True
@@ -794,6 +820,77 @@ while run:
 
     if gamewon:
         displaygamewonmenu()
+
+    if continuelevel:
+        playertimer = 180
+        playersalive = True
+        playerposx = 415
+        playerposy = 685
+        playerdirections = 3
+        playerdirectioncommands = 3
+        powerup = False
+        collision = False
+        deathcounter = 0
+        deadframenum = 0
+        respawn = False
+
+        ghostposx = [370, 400, 430, 460]
+        ghostposy = [415, 415, 415, 415]
+        ghosttargets = [0, 0, 0, 0]
+        ghostspeeds = 2
+        ghostdirections = [0, 0, 0, 0]
+        inboxes = [True, True, True, True]
+
+        regulateloop = 0
+        starttimer = 180
+        movementallowed = False
+        
+        blinkymove = 0
+        pinkymove = 0
+        inkymove = 0
+        clydemove = 0
+        blinkytimer = random.randint(0, 120)
+        pinkytimer = random.randint(180, 420)
+        inkytimer = random.randint(480, 720)
+        clydetimer = random.randint(780, 1020)
+
+        activepowerups = [
+            False,  #PACSPEEDBOOST          0
+            False,  #GHOSTSLOW              1
+            False,  #GHOSTSTUN              2
+            False,  #INVINCIBILITY          3
+            False,  #DOUBLESCORE            4
+            False,  #PLAYERSLOW             5
+            False,  #REVERSECONTROLS        6
+            False,  #INVISIBLEGHOSTS        7
+            None,   #ONEUP                  8
+            False,  #PLAYERSTUN             9
+            False,  #HALFSCORE              10
+            None,   #TELEPORTGHOSTSTOBOX    11
+            None    #RANDOMTELEPORT         12
+        ]
+
+        timeractive = False
+        powerup = False
+        poweruptimer = 0
+        playermovementallowed = True
+        ghostmovementallowed = True
+        pacvulnerable = True
+        scoremultiplier = 1
+        reversecontrols = False
+        invisibleghosts = False
+        teleportghosts = False
+        effect = False
+        pacspeed = 2
+
+        usedframes = pacframes
+        ghostimages = normalghostframes
+
+        gamewon = False
+        gameover = False
+
+        level = deepcopy(leveltemp)
+        continuelevel = False
 
     if not gameover and not gamewon:
         time += 1
@@ -813,10 +910,10 @@ while run:
 
             #BLINKY PATHFINDING
             if True:
-                print("Blinky")
                 matrixthing = blinky.getpath(pacindx_x, pacindx_y)
                 previousdirectionarrayblinky = matrixthing[1]
-                showmatrix(matrixthing[0], matrixthing[1])
+                #print("Blinky")
+                #showmatrix(matrixthing[0], matrixthing[1])
 
             #PINKY PATHFINDING
             if True:
@@ -849,25 +946,54 @@ while run:
                     while level[pindx_y][pindx_x] == 0:
                         pindx_x += 1
 
-                print("Pinky")
                 matrixthing = pinky.getpath(pindx_x, pindx_y)
                 previousdirectionarraypinky = matrixthing[1]
-                showmatrix(matrixthing[0], matrixthing[1])
+                #print("Pinky")
+                #showmatrix(matrixthing[0], matrixthing[1])
 
             #INKY PATHFINDING
             if True:
-                print("Inky")
-                matrixthing = inky.getpath(pacindx_x, pacindx_y)
+                iindx_x, iindx_y = pacindx_x, pacindx_y
+                if playerdirections == 0:
+                    iindx_y -= 4
+                    while iindx_y < 0:
+                        iindx_y += 1
+                    while level[iindx_y][iindx_x] == 0:
+                        iindx_y += 1
+                
+                if playerdirections == 1:
+                    iindx_x -= 4
+                    while iindx_x < 0:
+                        iindx_x += 1
+                    while level[iindx_y][iindx_x] == 0:
+                        iindx_x += 1
+
+                if playerdirections == 2:
+                    iindx_y += 4
+                    while iindx_y >= constants.gridy:
+                        iindx_y -= 1
+                    while level[iindx_y][iindx_x] == 0:
+                        iindx_y -= 1
+
+                if playerdirections == 3:
+                    iindx_x += 4
+                    while iindx_x >= constants.gridx:
+                        iindx_x -= 1
+                    while level[iindx_y][iindx_x] == 0:
+                        iindx_x -= 1
+
+                matrixthing = inky.getpath(iindx_x, iindx_y)
                 previousdirectionarrayinky = matrixthing[1]
-                showmatrix(matrixthing[0], matrixthing[1])
+                #print("Inky")
+                #showmatrix(matrixthing[0], matrixthing[1])
 
             #CLYDE PATHFINDING
             if True:
-                print("Clyde")
                 matrixthing = clyde.getpath(pacindx_x, pacindx_y)
                 previousdirectionarrayclyde = matrixthing[1]
-                showmatrix(matrixthing[0], matrixthing[1])
-                print()
+                #print("Clyde")
+                #showmatrix(matrixthing[0], matrixthing[1])
+                #print()
 
             regulateloop = 0
         else:
@@ -931,15 +1057,14 @@ while run:
         if not playersalive:
             playersalive, deathcounter, deadframenum, respawn = pacP1.deathgeneration()
 
-        #if ghosttargets == 0 and randomselectiontimer >= 1200:
-        #    ghosttargets = 1
-        #    randomselectiontimer = 0
-        #elif ghosttargets == 1 and randomselectiontimer >= 420:
-        #    ghosttargets = 0
-        #    randomselectiontiemr = 0
-        #else:
-        #    randomselectiontimer += 1
-
+        if ghosttargets == 0 and randomselectiontimer >= 1200:
+            ghosttargets = 1
+            randomselectiontimer = 0
+        elif ghosttargets == 1 and randomselectiontimer >= 420:
+            ghosttargets = 0
+            randomselectiontiemr = 0
+        else:
+            randomselectiontimer += 1
 
         #COLLISION CHECK
         if playersalive and pacvulnerable:
@@ -956,6 +1081,13 @@ while run:
                 run = False
             if event.key == pygame.K_BACKSPACE:
                 crashvariable = int("a")
+
+        if gamewon:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    gamewon = False
+                    gameover = False
+                    continuelevel = True
 
         if not gameover:
             if event.type == pygame.KEYDOWN:
@@ -988,7 +1120,7 @@ while run:
                 if event.key == pygame.K_a:
                     playerdirectioncommands = playerdirections
 
-    if not gameover:
+    if not gameover and not gamewon:
         #MOVING
         validturnsP1 = pacP1.checkpos(level)
         if playerdirectioncommands == 0 and validturnsP1[0]:
@@ -1007,7 +1139,7 @@ while run:
         if powerup:
             if not timeractive:
                 powerupused = random.randint(0, 12)
-                if powerupused not in [11, 12]:
+                if powerupused not in [8, 11, 12]:
                     activepowerups[powerupused] = True
                 match powerupused:
                     case 0:
@@ -1043,8 +1175,8 @@ while run:
                         invisibleghosts = True
                         timeractive = True
                     case 8:
-                        vulnerableghosts = True
-                        timeractive = True
+                        playerlives += 1
+                        powerup = False
                     case 9:
                         playermovementallowed = False
                         usedframes = pacfrozenframes
@@ -1063,6 +1195,7 @@ while run:
                         powerup = False
                     case 12:
                         playerposx, playerposy = pacP1.teleport()
+                        usedframes = pacframes
                         powerup = False
 
             if (activepowerups[0] or activepowerups[1] or activepowerups[2]) and poweruptimer >= 300:
@@ -1129,8 +1262,19 @@ while run:
             else:
                 poweruptimer += 1
 
-        if not (1 in level or 9 in level):
+        level[9][8] = 4
+        level[9][9] = 4
+        level[9][10] = 4
+        oneinlevel = False
+        for i in range(0, len(level)):
+            if 1 in level[i]:
+                oneinlevel = True
+                break
+        if oneinlevel:
             gamewon = False
+            level[9][8] = 1
+            level[9][9] = 1
+            level[9][10] = 1
         else:
             gamewon = True
 

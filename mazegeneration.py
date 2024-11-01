@@ -174,7 +174,6 @@ def generate():
         [cell.draw() for cell in gridcells]
         currentcell.visited = True
         currentcell.drawcurrentcell()
-
         nextcell = currentcell.checkneighbours()
         if nextcell:
             nextcell.visited = True
@@ -312,6 +311,14 @@ def createmaze(maze):
                 maze[i][j - 1] = 1
             queue.pop(0)
 
+    for i in range(0, 17):
+        row = random.randint(1, 19)
+        col = random.randint(1, 17)
+        while maze[row][col] != 0:
+            row = random.randint(1, 19)
+            col = random.randint(1, 17)
+        maze[row][col] = 1
+
     for i in range(6, 13):
         maze[7][i] = 1
         maze[11][i] = 1
@@ -333,21 +340,13 @@ def createmaze(maze):
     maze[8][8] = 0
     maze[8][10] = 0
     
-    for i in range(0, 4):
+    numpowerups = random.randint(4, 8)
+    for i in range(0, numpowerups):
         row = random.randint(0, 20)
         col = random.randint(0, 18)
-        while maze[row][col] == 0:
+        while maze[row][col] == 0 or maze[row][col] == 9 or maze[row][col] == 2:
             row = random.randint(0, 20)
             col = random.randint(0, 18)
         maze[row][col] = 9
-
-    mazecuts = random.randint(26, 75)
-    for i in range(0, mazecuts):
-        row = random.randint(0, 20)
-        col = random.randint(0, 18)
-        while maze[row][col] != 0:
-            row = random.randint(0, 20)
-            col = random.randint(0, 18)
-        maze[row][col] = 0
 
     return maze
