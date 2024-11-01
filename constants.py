@@ -4,12 +4,27 @@ pygame.init()
 
 SCREEN_WIDTH = 1175
 SCREEN_HEIGHT = 960
+TILE = 95
 font = pygame.font.Font('emulogic.ttf', 20)
 
 gridx = 19
 gridy = 21
 indenty = (SCREEN_HEIGHT - (gridy * 45)) // 2
 indentx = indenty
+
+eastereggnames = [
+    "The Dot Eater",
+    "The Yellow Hero",
+    "The Pixelated Pursuit",
+    "The Gulp and Go",
+    "The Dot Dash",
+    "The Nibble and Zoom",
+    "The Maze Maze",
+    "The Dot Devourer",
+    "The Power Pellet Prowler",
+    "The Midnight Munch",
+    "The Dot Dilemma"
+]
 
 CENTREX = SCREEN_WIDTH / 2
 CENTREY = SCREEN_HEIGHT / 2
@@ -24,7 +39,8 @@ COLOURS = [(255, 0, 0),         #RED
            (46, 12, 200),       #BLUE
            (62, 62, 62),        #GREY
            (0, 255, 31),        #GREEN
-           (110, 0, 0)          #DARKRED
+           (110, 0, 0),         #DARKRED
+           (181, 180, 176)      #LIGHTGREY
            ] 
 RED = 0
 CYAN = 1
@@ -37,6 +53,7 @@ BLUE = 7
 GREY = 8
 GREEN = 9
 DARKRED = 10
+LIGHTGREY = 11
 
 PI = math.pi
 
