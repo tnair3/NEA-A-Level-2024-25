@@ -236,8 +236,8 @@ mazeelements = [pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/
                 pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall16.png'), (45, 45))]
 
 pellets = [pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/pellet.png'), (32, 32)),
-           pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/powerpellet.png'), (32, 32))
-           ]
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/powerpellet.png'), (32, 32))
+        ]
 
 classic = [
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
