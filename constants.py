@@ -1,7 +1,7 @@
 import pygame
 pygame.init()
 
-SCREEN_WIDTH = 1175
+SCREEN_WIDTH = 1290
 SCREEN_HEIGHT = 960
 TILE = 95
 font = pygame.font.Font('emulogic.ttf', 20)

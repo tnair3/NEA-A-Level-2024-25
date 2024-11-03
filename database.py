@@ -32,16 +32,21 @@ def initialisedatabase():
                     Password VARCHAR(99) NOT NULL,
                     Salt VARCHAR(99) NOT NULL
                 ); """
-    
+
     scorestable = """CREATE TABLE IF NOT EXISTS SCORES (
                     Username VARCHAR(20) NOT NULL,
                     Date CHAR(8) NOT NULL,
                     Time INT NOT NULL,
-                    Score INT NOT NULL
+                    Score INT NOT NULL,
+                    Cleared INT NOT NULL,
+                    Classic VARCHAR(5) NOT NULL
                 ); """
     
     cursor.execute(logintable)
     cursor.execute(scorestable)
+
+    addnewlogindetails("Anonymous", "NOTREALLOGIN")
+    
     conn.commit()
 
 #LOGIN
@@ -115,24 +120,38 @@ def updatelogindetails(username, newusername, password):
     conn = sql.connect('pacmandata.db')
     cursor = conn.cursor()
     if newusername != None:
-        cursor.execute("""UPDATE LOGIN
-                       SET Username = ?
-                       WHERE Username = ?""", (newusername, username,))
+        cursor.execute("""SELECT Username
+                    FROM LOGIN
+                    WHERE Username = ?""", (newusername,))
+        if len(cursor.fetchall()) == 0:
+            cursor.execute("""UPDATE LOGIN
+                        SET Username = ?
+                        WHERE Username = ?""", (newusername, username,))
+            cursor.execute("""UPDATE SCORES
+                        SET Username = ?
+                        WHERE Username = ?""", (newusername, username))
+            conn.commit()
+            conn.close()
+            return True
+        else:
+            conn.commit()
+            conn.close()
+            return False
     if password != None:
         password, salt = hashalgorithm(password, None)
         cursor.execute("""UPDATE LOGIN
                        SET Password = ?, Salt = ?
                        WHERE Username = ?""", (password, salt, username))
-    
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()    
+        return True
 
 #SCORES
-def addnewscores(username, date, time, score):
+def addnewscores(username, date, time, score, cleared, classic):
     conn = sql.connect('pacmandata.db')
     cursor = conn.cursor()
-    cursor.execute("""INSERT INTO SCORES VALUES (?, ?, ?, ?)""",
-                   (username, date, time, score))
+    cursor.execute("""INSERT INTO SCORES VALUES (?, ?, ?, ?, ?, ?)""",
+                   (username, date, time, score, cleared, classic))
     
     conn.commit()
     conn.close()

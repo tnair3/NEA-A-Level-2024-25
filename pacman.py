@@ -956,7 +956,7 @@ def rungame(username, classicmaze):
     #MAZES ==================================================================================================================================================================================================================================================
     classic = [
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+                [0, 1, 1, 1, 1, 1, 1, 1, 9, 0, 9, 1, 1, 1, 1, 1, 1, 1, 0],
                 [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
                 [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
                 [0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0],
@@ -974,7 +974,7 @@ def rungame(username, classicmaze):
                 [0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0],
                 [0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0],
                 [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
-                [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+                [0, 1, 1, 1, 9, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 1, 1, 1, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 
     mazetemplate = [
@@ -1005,6 +1005,7 @@ def rungame(username, classicmaze):
     counter = 0
     fps = 60
     time = 0
+    cleared = 0
 
     cells = []
     cols, rows = 9, 10
@@ -1013,7 +1014,7 @@ def rungame(username, classicmaze):
     playertimer = 180
     playersalive = True
     playerscore = -10
-    playerlives = 3
+    playerlives = 5
     playerposx = 415
     playerposy = 685
     playerdirections = 3
@@ -1056,13 +1057,15 @@ def rungame(username, classicmaze):
         False,  #PLAYERSLOW             5
         False,  #REVERSECONTROLS        6
         False,  #INVISIBLEGHOSTS        7
-        False,  #GHOSTSVULNERABLE       8
+        None,   #ONEUP                  8
         False,  #PLAYERSTUN             9
         False,  #HALFSCORE              10
         None,   #TELEPORTGHOSTSTOBOX    11
         None    #RANDOMTELEPORT         12
     ]
 
+    badeffects = [5, 6, 7, 9, 10]
+    goodeffects = [1, 2, 3, 4, 8, 11]
     timeractive = False
     powerup = False
     poweruptimer = 0
@@ -1072,7 +1075,6 @@ def rungame(username, classicmaze):
     scoremultiplier = 1
     reversecontrols = False
     invisibleghosts = False
-    teleportghosts = False
     effect = False
 
     if classicmaze:
@@ -1165,7 +1167,6 @@ def rungame(username, classicmaze):
             scoremultiplier = 1
             reversecontrols = False
             invisibleghosts = False
-            teleportghosts = False
             effect = False
             pacspeed = 2
 
@@ -1241,7 +1242,6 @@ def rungame(username, classicmaze):
             scoremultiplier = 1
             reversecontrols = False
             invisibleghosts = False
-            teleportghosts = False
             effect = False
             pacspeed = 2
 
@@ -1424,7 +1424,7 @@ def rungame(username, classicmaze):
                 randomselectiontimer = 0
             elif ghosttargets == 1 and randomselectiontimer >= 420:
                 ghosttargets = 0
-                randomselectiontiemr = 0
+                randomselectiontimer = 0
             else:
                 randomselectiontimer += 1
 
@@ -1447,6 +1447,7 @@ def rungame(username, classicmaze):
             if gamewon:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
+                        cleared += 1
                         gamewon = False
                         gameover = False
                         continuelevel = True
@@ -1501,6 +1502,10 @@ def rungame(username, classicmaze):
             if powerup:
                 if not timeractive:
                     powerupused = random.randint(0, 12)
+                    if powerupused in badeffects:
+                        confirmbad = random.randint(0, 5)
+                        if confirmbad != 5:
+                            powerupused = choice(goodeffects)
                     if powerupused not in [8, 11, 12]:
                         activepowerups[powerupused] = True
                     match powerupused:
@@ -1607,13 +1612,6 @@ def rungame(username, classicmaze):
                     invisibleghosts = False
                     usedframes = pacframes
                     ghostimages = normalghostframes
-                elif activepowerups[8] and poweruptimer >= 600:
-                    timeractive = False
-                    powerup = False
-                    poweruptimer = 0
-                    vulnerableghosts = False
-                    usedframes = pacframes
-                    ghostimages = normalghostframes
                 elif activepowerups[9] and poweruptimer >= 90:
                     timeractive = False
                     powerup = False
@@ -1642,4 +1640,4 @@ def rungame(username, classicmaze):
 
         pygame.display.update()
 
-    return username, playerscore, time
+    return username, playerscore, time, cleared, classicmaze
