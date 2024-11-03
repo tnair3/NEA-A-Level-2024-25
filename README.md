@@ -3,4 +3,4 @@
 
 To run, download as ZIP File then extract
 
-Open file pacman.py and run (subject to change)
+Open file menu.py and run
