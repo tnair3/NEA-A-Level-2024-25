@@ -1,5 +1,4 @@
 import pygame
-import math
 pygame.init()
 
 SCREEN_WIDTH = 1175
@@ -54,8 +53,6 @@ GREY = 8
 GREEN = 9
 DARKRED = 10
 LIGHTGREY = 11
-
-PI = math.pi
 
 clock = pygame.time.Clock()
 

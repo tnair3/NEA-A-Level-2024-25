@@ -2,11 +2,10 @@ import sqlite3 as sql
 from random import choice
 from random import randint
 
-conn = sql.connect('pacmandata.db')
-cursor = conn.cursor()
-
 # TESTING =================================================================================
-def displaydatabase(table): #FOR TESTING PURPOSES
+def displaydatabase(table):
+    conn = sql.connect('pacmandata.db')
+    cursor = conn.cursor()
     match table:
         case "LOGIN":
             print("LOGIN TABLE")
@@ -22,9 +21,12 @@ def displaydatabase(table): #FOR TESTING PURPOSES
             for row in data:
                 print(row)
             print()
+    conn.close()
 #TESTING ==================================================================================
 
 def initialisedatabase():
+    conn = sql.connect('pacmandata.db')
+    cursor = conn.cursor()
     logintable = """CREATE TABLE IF NOT EXISTS LOGIN (
                     Username VARCHAR(20) NOT NULL,
                     Password VARCHAR(99) NOT NULL,
@@ -42,6 +44,7 @@ def initialisedatabase():
     cursor.execute(scorestable)
     conn.commit()
 
+#LOGIN
 def hashalgorithm(password, salt):
     def generatesalt():
         salt = ""
@@ -64,6 +67,8 @@ def hashalgorithm(password, salt):
     return hashedpassword, salt
 
 def addnewlogindetails(username, password):
+    conn = sql.connect('pacmandata.db')
+    cursor = conn.cursor()
     cursor.execute("""SELECT Username
                 FROM LOGIN
                 WHERE Username = ?""", (username,))
@@ -73,48 +78,17 @@ def addnewlogindetails(username, password):
         password, salt = hashalgorithm(password, None)
         cursor.execute("""INSERT INTO LOGIN VALUES (?, ?, ?)""", 
                     (username, password, salt))
+        conn.commit()
+        conn.close()
         return True
     else:
+        conn.commit()
+        conn.close()
         return False
 
-def updatelogindetails(username, newusername, password):
-    if newusername != None:
-        cursor.execute("""UPDATE LOGIN
-                       SET Username = ?
-                       WHERE Username = ?""", (newusername, username,))
-    if password != None:
-        password, salt = hashalgorithm(password, None)
-        cursor.execute("""UPDATE LOGIN
-                       SET Password = ?, Salt = ?
-                       WHERE Username = ?""", (password, salt, username))
-
-def addnewscores(username, date, time, score):
-    cursor.execute("""INSERT INTO SCORES VALUES (?, ?, ?, ?)""",
-                   (username, date, time, score))
-    
-def selectfromscores(username, date):
-    if username == None and date == None:
-        cursor.execute("""SELECT * 
-                    FROM SCORES""")
-    if username == None and date != None:
-        cursor.execute("""SELECT *
-                    FROM SCORES
-                    WHERE Date = ?""", (date,))
-    if username != None and date == None:
-        cursor.execute("""SELECT *
-                    FROM SCORES
-                    WHERE Username = ?""", (username,))
-    if username != None and date != None:
-        cursor.execute("""SELECT *
-                    FROM SCORES
-                    WHERE Date = ? AND Username = ?""", (username, date,))
-        
-   
-    data = cursor.fetchall()
-    for row in data:
-        print(row)
-
 def checklogindetails(username, inputpassword):
+    conn = sql.connect('pacmandata.db')
+    cursor = conn.cursor()
     cursor.execute("""SELECT "Password", "Salt"
                    FROM LOGIN
                    WHERE Username = ?""", (username,))
@@ -125,13 +99,54 @@ def checklogindetails(username, inputpassword):
         salt = data[1]
         hashedpass = hashalgorithm(inputpassword, salt)[0]
         if hashedpass == validpassword:
+            conn.commit()
+            conn.close()
             return True, True
         else:
+            conn.commit()
+            conn.close()
             return True, False
     else:
+        conn.commit()
+        conn.close()
         return False, False
+    
+def updatelogindetails(username, newusername, password):
+    conn = sql.connect('pacmandata.db')
+    cursor = conn.cursor()
+    if newusername != None:
+        cursor.execute("""UPDATE LOGIN
+                       SET Username = ?
+                       WHERE Username = ?""", (newusername, username,))
+    if password != None:
+        password, salt = hashalgorithm(password, None)
+        cursor.execute("""UPDATE LOGIN
+                       SET Password = ?, Salt = ?
+                       WHERE Username = ?""", (password, salt, username))
+    
+    conn.commit()
+    conn.close()
 
-initialisedatabase()
-
-conn.commit()
-conn.close()
+#SCORES
+def addnewscores(username, date, time, score):
+    conn = sql.connect('pacmandata.db')
+    cursor = conn.cursor()
+    cursor.execute("""INSERT INTO SCORES VALUES (?, ?, ?, ?)""",
+                   (username, date, time, score))
+    
+    conn.commit()
+    conn.close()
+    
+def selectfromscores(username):
+    conn = sql.connect('pacmandata.db')
+    cursor = conn.cursor()
+    if username == None:
+        cursor.execute("""SELECT * 
+                    FROM SCORES""")
+    else:
+        cursor.execute("""SELECT *
+                    FROM SCORES
+                    WHERE Username = ?""", (username,))
+        
+    data = cursor.fetchall()
+    return data
