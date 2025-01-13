@@ -1,5 +1,4 @@
-import pygame
-pygame.init()
+import pygame; pygame.init()
 
 SCREEN_WIDTH = 1290
 SCREEN_HEIGHT = 960
@@ -56,17 +55,22 @@ LIGHTGREY = 11
 
 clock = pygame.time.Clock()
 
-def binary_Search(array, low, high, searchval):
-    while low <= high:
-        mid = low + (high - low) // 2
-        
-        if array[mid] == searchval:
-            return mid
-        
-        elif array[mid] < searchval:
-            low = mid + 1
+def quicksort(array, min, max, indextosort):
+    def partition(array, min, max, indextosort):
+        pivot = array[max][indextosort]
+        i = min - 1
+        for j in range(min, max):
+            if array[j][indextosort] >= pivot:
+                i = i + 1
+                (array[i], array[j]) = (array[j], array[i])
+        (array[i + 1], array[max]) = (array[max], array[i + 1])
 
-        else:
-            high = mid + 1
-        
-        return -1
+        return i + 1
+    
+    if min < max:
+        partitioni = partition(array, min, max, indextosort)
+
+        quicksort(array, min, partitioni - 1, indextosort) #Recursive left
+        quicksort(array, partitioni + 1, max, indextosort) #Recursive right
+    
+    return array

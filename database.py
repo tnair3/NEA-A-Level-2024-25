@@ -1,8 +1,9 @@
 import sqlite3 as sql
+
 from random import choice
 from random import randint
 
-# TESTING =================================================================================
+# TESTING =========================================================================================
 def displaydatabase(table):
     conn = sql.connect('pacmandata.db')
     cursor = conn.cursor()
@@ -22,8 +23,8 @@ def displaydatabase(table):
                 print(row)
             print()
     conn.close()
-#TESTING ==================================================================================
 
+#CODE =============================================================================================
 def initialisedatabase():
     conn = sql.connect('pacmandata.db')
     cursor = conn.cursor()
@@ -50,6 +51,7 @@ def initialisedatabase():
     addnewlogindetails("Anonymous", "NOTREALLOGIN")
     
     conn.commit()
+    conn.close()
 
 #LOGIN
 def hashalgorithm(password, salt):
@@ -82,19 +84,25 @@ def addnewlogindetails(username, password):
 
     numusernames = cursor.fetchall()
     if len(numusernames) == 0:
-        password, salt = hashalgorithm(password, None)
-        cursor.execute("""SELECT UserID
-                    FROM LOGIN""")
-        newID = len(cursor.fetchall())
-        cursor.execute("""INSERT INTO LOGIN VALUES (?, ?, ?, ?)""", 
-                    (newID, username, password, salt))
-        conn.commit()
-        conn.close()
-        return True
+        if len(password) >= 8:
+            password, salt = hashalgorithm(password, None)
+            cursor.execute("""SELECT UserID
+                        FROM LOGIN""")
+            newID = len(cursor.fetchall())
+            cursor.execute("""INSERT INTO LOGIN 
+                           VALUES (?, ?, ?, ?)""", 
+                        (newID, username, password, salt))
+            conn.commit()
+            conn.close()
+            return True, False, False
+        else:
+            conn.commit()
+            conn.close()
+            return False, False, True
     else:
         conn.commit()
         conn.close()
-        return False
+        return False, True, False
 
 def checklogindetails(username, inputpassword):
     conn = sql.connect('pacmandata.db')
@@ -120,7 +128,7 @@ def checklogindetails(username, inputpassword):
         conn.commit()
         conn.close()
         return False, False
-    
+
 def updatelogindetails(userID, newusername, password):
     conn = sql.connect('pacmandata.db')
     cursor = conn.cursor()
@@ -132,24 +140,26 @@ def updatelogindetails(userID, newusername, password):
             cursor.execute("""UPDATE LOGIN
                         SET Username = ?
                         WHERE UserID = ?""", (newusername, userID,))
-            cursor.execute("""UPDATE SCORES
-                        SET Username = ?
-                        WHERE UserID = ?""", (newusername, userID))
             conn.commit()
             conn.close()
-            return True
+            return True, False, False
         else:
             conn.commit()
             conn.close()
-            return False
+            return False, True, False
     if password != None:
-        password, salt = hashalgorithm(password, None)
-        cursor.execute("""UPDATE LOGIN
-                       SET Password = ?, Salt = ?
-                       WHERE UserID = ?""", (password, salt, userID))
-        conn.commit()
-        conn.close()    
-        return True
+        if len(password) >= 8:
+            password, salt = hashalgorithm(password, None)
+            cursor.execute("""UPDATE LOGIN
+                        SET Password = ?, Salt = ?
+                        WHERE UserID = ?""", (password, salt, userID))
+            conn.commit()
+            conn.close()
+            return True, False, False
+        else:
+            conn.commit()
+            conn.close()
+            return False, False, True
 
 def getusername(userID):
     conn = sql.connect('pacmandata.db')
@@ -165,7 +175,11 @@ def getuserID(username):
     cursor.execute("""SELECT UserID
                 FROM LOGIN
                 WHERE Username = ?""", (username,))
-    return cursor.fetchall()[0][0]
+    data = cursor.fetchall()
+    if len(data) != 0:
+        return data[0][0]
+    else:
+        return None
 
 #SCORES
 def addnewscores(username, date, time, score, cleared):
@@ -187,17 +201,29 @@ def selectfromscores(username):
     if username == None:
         cursor.execute("""SELECT * 
                     FROM SCORES""")
+        data = cursor.fetchall()
+        data = [list(row) for row in data]
+        for i in range(0, len(data)):
+            data[i][1] = getusername(data[i][1])
+            changedata = data[i][1][0]
+            data[i][1] = changedata
+        data = map(list, data)
+        return data
     else:
         UserID = getuserID(username)
-        cursor.execute("""SELECT *
-                       FROM SCORES
-                       WHERE UserID = ?""", (UserID))
+        if UserID != None:
+            UserID = int(UserID)
+            cursor.execute("""SELECT *
+                        FROM SCORES
+                        WHERE UserID = ?""", (UserID,))
         
-    data = cursor.fetchall()
-    data = [list(row) for row in data]
-    for i in range(0, len(data)):
-        data[i][1] = getusername(data[i][1])
-        changedata = data[i][1][0]
-        data[i][1] = changedata
-    data = map(list, data)
-    return data
+            data = cursor.fetchall()
+            data = [list(row) for row in data]
+            for i in range(0, len(data)):
+                data[i][1] = getusername(data[i][1])
+                changedata = data[i][1][0]
+                data[i][1] = changedata
+            data = map(list, data)
+            return data
+        else:
+            return []

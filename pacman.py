@@ -1,6 +1,6 @@
-#IMPORTS ================================================================================================================================================================================================================================================
 import pygame; pygame.init()
 import random
+
 from random import choice
 from copy import deepcopy
 from queue import Queue
@@ -142,18 +142,22 @@ def rungame(username, classicmaze):
             index_x, index_y = (self.x + 20 - constants.indentx) // 45, (self.y + 20 - constants.indenty) // 45
             if maze[index_y][index_x] == 1:
                 self.score += (10 * scoremultiplier)
-                return index_x, index_y, self.score, powerup
+                newscore = (10 * scoremultiplier)
+                return index_x, index_y, self.score, powerup, newscore
             
             if maze[index_y][index_x] == 9:
                 self.score += (50 * scoremultiplier)
+                newscore = (50 * scoremultiplier)
                 powerup = True
-                return index_x, index_y, self.score, powerup
+                return index_x, index_y, self.score, powerup, newscore
             
             if maze[index_y][index_x] in fruitindexes:
                 self.score += (250 * scoremultiplier)
-                return index_x, index_y, self.score, powerup
+                newscore = (50 * scoremultiplier)
+                return index_x, index_y, self.score, powerup, newscore
             
-            return 0, 0, self.score, powerup
+            newscore = 0
+            return 0, 0, self.score, powerup, newscore
     
         def getindex(self):
             indx_x, indx_y = ((self.x + 20) - constants.indentx) // 45, ((self.y + 20) - constants.indenty) // 45
@@ -328,20 +332,33 @@ def rungame(username, classicmaze):
 
         def move(self):
             self.checkpos()
+            movebyone = random.randint(0, 15)
             if self.turns[0]:
-                self.posy -= self.speed
+                if movebyone != 15:
+                    self.posy -= self.speed
+                else:
+                    self.posy -= 1
                 self.direction = 0
                 return self.posx, self.posy, self.direction
             if self.turns[1]:
-                self.posx += self.speed
+                if movebyone != 15:
+                    self.posx += self.speed
+                else:
+                    self.posx += 1
                 self.direction = 1
                 return self.posx, self.posy, self.direction
             if self.turns[2]:
-                self.posy += self.speed
+                if movebyone != 15:
+                    self.posy += self.speed
+                else:
+                    self.posy += 1
                 self.direction = 2
                 return self.posx, self.posy, self.direction
             if self.turns[3]:
-                self.posx -= self.speed
+                if movebyone != 15:
+                    self.posx -= self.speed
+                else:
+                    self.posx -= 1
                 self.direction = 3
                 return self.posx, self.posy, self.direction
             
@@ -401,6 +418,244 @@ def rungame(username, classicmaze):
             return self.walls
 
     #SUBROUTINES ============================================================================================================================================================================================================================================
+    #Maze Generation
+    def createcells():
+        for i in range(0, constants.gridx):
+            for j in range(0, constants.gridy):
+                cells.append(Cell((i * 45) + indentx, (j * 45) + indenty))
+
+    def generategrid(level):
+        createcells()
+        validcells = [1, 2, 4, 9, 10, 11, 12, 13]
+        mazesize = len(level)
+        rowsize = len(level[0])
+        for row in range(0, mazesize):
+            for column in range(0, rowsize):
+                if level[row][column] == 0 or level[row][column] == 2:
+                    cellnum = (column * 21) + (row)
+                    x, y = cells[cellnum].receivevar()
+
+                    if row + 1 < mazesize and (level[row + 1][column] in validcells): #DOWN
+                        cells[cellnum].walls["bottom"] = False
+                    if row - 1 >= 0 and (level[row - 1][column] in validcells): #UP
+                        cells[cellnum].walls["top"] = False
+                    if column + 1 < rowsize and (level[row][column + 1] in validcells): #RIGHT
+                        cells[cellnum].walls["right"] = False
+                    if column - 1 < rowsize and (level[row][column - 1] in validcells): #LEFT
+                        cells[cellnum].walls["left"] = False
+                    
+                    if row + 1 >= mazesize: #DOWN
+                        cells[cellnum].walls["bottom"] = False
+                    if row - 1 < 0: #UP
+                        cells[cellnum].walls["top"] = False
+                    if column + 1 >= rowsize: #RIGHT
+                        cells[cellnum].walls["right"] = False
+                    if column - 1 < 0: #LEFT
+                        cells[cellnum].walls["left"] = False
+
+                    spriteuse = 0
+                    if cells[cellnum].walls["top"] == True:
+                        spriteuse += 1
+                    if cells[cellnum].walls["right"] == True:
+                        spriteuse += 2
+                    if cells[cellnum].walls["bottom"] == True:
+                        spriteuse += 4
+                    if cells[cellnum].walls["left"] == True:
+                        spriteuse += 8
+
+                    if column == 9 and row == 8:
+                        spriteuse = 16
+                    
+                    sc.blit(mazeelements[spriteuse], (x, y))
+
+    def defaultpelletspawn(maze):
+        row = len(maze)
+        col = len(maze[0])
+        for i in range(row):
+            for j in range(col):
+                if maze[i][j] == 1 and not (i == 9 and (j in [6, 8, 9, 10, 12])) and not ((i in [8, 10]) and (j in [6, 12])) and not ((i in [7, 11] and (j in [6, 7, 8, 9, 10, 11, 12]))):
+                    maze[i][j] = 3
+        
+        return maze
+
+    def generatepellets(level):
+        row = len(level)
+        col = len(level[0])
+        for i in range(row):
+            for j in range(col):
+                match level[i][j]:
+                    case 3:
+                        xpos, ypos = (j * 45) + indentx + 7, (i * 45) + indenty + 7
+                        sc.blit(pellets[0], (xpos, ypos))
+                    case 9:
+                        xpos, ypos = (j * 45) + indentx + 7, (i * 45) + indenty + 7
+                        sc.blit(pellets[1], (xpos, ypos))
+                    case 10:
+                        xpos, ypos = (j * 45) + indentx, (i * 45) + indenty
+                        sc.blit(fruits[0], (xpos, ypos))
+                    case 11:
+                        xpos, ypos = (j * 45) + indentx, (i * 45) + indenty
+                        sc.blit(fruits[1], (xpos, ypos))
+                    case 12:
+                        xpos, ypos = (j * 45) + indentx, (i * 45) + indenty
+                        sc.blit(fruits[2], (xpos, ypos))
+                    case 13:
+                        xpos, ypos = (j * 45) + indentx, (i * 45) + indenty
+                        sc.blit(fruits[3], (xpos, ypos))
+
+        row = len(level)
+        col = len(level[0])
+        for i in range(row):
+            for j in range(col):
+                if level[i][j] == 3 and not (i == 9 and (j in [8, 9, 10])):
+                    level[i][j] = 1
+
+    def generaterandommaze():
+        def removewalls(current, next):
+            dx = current.x - next.x
+            dy = current.y - next.y
+            match dx:
+                case 1:
+                    current.walls['left'] = False
+                    next.walls['right'] = False
+                case -1:
+                    current.walls['right'] = False
+                    next.walls['left'] = False
+            
+            match dy:
+                case 1:
+                    current.walls['top'] = False
+                    next.walls['bottom'] = False
+                case -1:
+                    current.walls['bottom'] = False
+                    next.walls['top'] = False
+
+        currentcell = gridcells[0]
+        stack = []
+        complete = False
+        while not complete:
+            clock.tick(50)
+            sc.fill(constants.COLOURS[constants.BLACK])
+
+            [cell.draw() for cell in gridcells]
+            currentcell.visited = True
+            currentcell.drawcurrentcell()
+            nextcell = currentcell.checkneighbours()
+            if nextcell:
+                nextcell.visited = True
+                stack.append(currentcell)
+                removewalls(currentcell, nextcell)
+                currentcell = nextcell
+            elif stack:
+                currentcell = stack.pop()
+            
+            if len(stack) == 0:
+                complete = True
+
+            pygame.display.update()
+
+        cells = []
+
+        for i in range(0, rows):
+            row = []
+            for j in range(0, cols):
+                index = j + i * cols
+                row.append(gridcells[index].printcell())
+            cells.append(row)
+        
+        return cells
+
+    def showarray(array):
+        for i in range(0, len(array)):
+            print("Row", i)
+            for j in range(len(array[i])):
+                print("Index", j, "=", array[i][j])
+
+            print()
+
+    def showmatrix(maze):
+        maze_row = ''
+
+        for row in maze:
+            for tile in row:
+                maze_row += ' ' + str(tile)
+            print(maze_row)
+            maze_row = ''
+
+    def createmaze(mazetemp):
+        array = generaterandommaze()
+        queue = []
+        for i in range(0, len(array)):
+            for j in range(0, len(array[i])):
+                queue.append(array[i][j])
+
+        maze = deepcopy(mazetemp)
+        mazesize = len(maze)
+        rowsize = len(maze[0])
+        for i in range(1, mazesize, 2):
+            for j in range(1, rowsize, 2):
+                maze[i][j] = 1
+                currentcellwalls = queue[0]
+                if not currentcellwalls['top']:
+                    maze[i - 1][j] = 1
+                if not currentcellwalls['right']:
+                    maze[i][j + 1] = 1
+                if not currentcellwalls['bottom']:
+                    maze[i + 1][j] = 1
+                if not currentcellwalls['left']:
+                    maze[i][j - 1] = 1
+                queue.pop(0)
+
+        for i in range(0, 17):
+            row = random.randint(1, 19)
+            col = random.randint(1, 17)
+            while maze[row][col] != 0:
+                row = random.randint(1, 19)
+                col = random.randint(1, 17)
+            maze[row][col] = 1
+
+        for i in range(6, 13):
+            maze[7][i] = 4
+            maze[11][i] = 4
+        for i in range(7, 12):
+            maze[i][6] = 4
+            maze[i][12] = 4
+        for i in range(8, 11):
+            maze[9][i] = 1
+        for i in range(12, 16):
+            maze[i][9] = 4
+
+        maze[8][9] = 2
+
+        for i in range(8, 11):
+            maze[i][7] = 0
+            maze[i][11] = 0
+        for i in range(7, 12):
+            maze[10][i] = 0
+        maze[8][8] = 0
+        maze[8][10] = 0
+        
+        numpowerups = random.randint(4, 8)
+        for i in range(0, numpowerups):
+            row = random.randint(0, 20)
+            col = random.randint(0, 18)
+            while maze[row][col] == 0 or maze[row][col] == 9 or maze[row][col] == 2:
+                row = random.randint(0, 20)
+                col = random.randint(0, 18)
+            maze[row][col] = 9
+
+        numfruits = random.randint(0, 2)
+        fruitindexes = [10, 11, 12, 13]
+        for i in range(0, numfruits):
+            row = random.randint(0, 20)
+            col = random.randint(0, 18)
+            while maze[row][col] == 0 or maze[row][col] == 9 or maze[row][col] == 2:
+                row = random.randint(0, 20)
+                col = random.randint(0, 18)
+            maze[row][col] = choice(fruitindexes)
+
+        return maze
+
     #Breadth-First Search Pathfinding
     def creategraph(array):
         graph = {}
@@ -573,271 +828,26 @@ def rungame(username, classicmaze):
         sc.blit(timertext, (250, 475))
         sc.blit(continuetext, (250, 500))
 
-    #Maze Generation
-    def createcells():
-        for i in range(0, constants.gridx):
-            for j in range(0, constants.gridy):
-                cells.append(Cell((i * 45) + indentx, (j * 45) + indenty))
-
-    def generategrid(level):
-        createcells()
-        fruitindexes = [10, 11, 12, 13]
-        mazesize = len(level)
-        rowsize = len(level[0])
-        for row in range(0, mazesize):
-            for column in range(0, rowsize):
-                if level[row][column] == 0 or level[row][column] == 2:
-                    cellnum = (column * 21) + (row)
-                    x, y = cells[cellnum].receivevar()
-
-                    if row + 1 < mazesize and (level[row + 1][column] == 1 or level[row + 1][column] == 9 or level[row + 1][column] in fruitindexes): #DOWN
-                        cells[cellnum].walls["bottom"] = False
-                    if row - 1 >= 0 and (level[row - 1][column] == 1 or level[row - 1][column] == 9 or level[row - 1][column] in fruitindexes): #UP
-                        cells[cellnum].walls["top"] = False
-                    if column + 1 < rowsize and (level[row][column + 1] == 1 or level[row][column + 1] == 2 or level[row][column + 1] == 9 or level[row][column + 1] in fruitindexes): #RIGHT
-                        cells[cellnum].walls["right"] = False
-                    if column - 1 < rowsize and (level[row][column - 1] == 1 or level[row][column - 1] == 2 or level[row][column - 1] == 9 or level[row][column - 1] in fruitindexes): #LEFT
-                        cells[cellnum].walls["left"] = False
-                    
-                    if row + 1 >= mazesize: #DOWN
-                        cells[cellnum].walls["bottom"] = False
-                    if row - 1 < 0: #UP
-                        cells[cellnum].walls["top"] = False
-                    if column + 1 >= rowsize: #RIGHT
-                        cells[cellnum].walls["right"] = False
-                    if column - 1 < 0: #LEFT
-                        cells[cellnum].walls["left"] = False
-
-                    spriteuse = 0
-                    if cells[cellnum].walls["top"] == True:
-                        spriteuse += 1
-                    if cells[cellnum].walls["right"] == True:
-                        spriteuse += 2
-                    if cells[cellnum].walls["bottom"] == True:
-                        spriteuse += 4
-                    if cells[cellnum].walls["left"] == True:
-                        spriteuse += 8
-
-                    if column == 9 and row == 8:
-                        spriteuse = 16
-                    
-                    sc.blit(mazeelements[spriteuse], (x, y))
-
-    def defaultpelletspawn(maze):
-        row = len(maze)
-        col = len(maze[0])
-        for i in range(row):
-            for j in range(col):
-                if maze[i][j] == 1 and not (i == 9 and (j == 8 or j == 9 or j == 10)):
-                    maze[i][j] = 3
-        
-        return maze
-
-    def generatepellets(level):
-        row = len(level)
-        col = len(level[0])
-        for i in range(row):
-            for j in range(col):
-                match level[i][j]:
-                    case 3:
-                        xpos, ypos = (j * 45) + indentx + 7, (i * 45) + indenty + 7
-                        sc.blit(pellets[0], (xpos, ypos))
-                    case 9:
-                        xpos, ypos = (j * 45) + indentx + 7, (i * 45) + indenty + 7
-                        sc.blit(pellets[1], (xpos, ypos))
-                    case 10:
-                        xpos, ypos = (j * 45) + indentx, (i * 45) + indenty
-                        sc.blit(fruits[0], (xpos, ypos))
-                    case 11:
-                        xpos, ypos = (j * 45) + indentx, (i * 45) + indenty
-                        sc.blit(fruits[1], (xpos, ypos))
-                    case 12:
-                        xpos, ypos = (j * 45) + indentx, (i * 45) + indenty
-                        sc.blit(fruits[2], (xpos, ypos))
-                    case 13:
-                        xpos, ypos = (j * 45) + indentx, (i * 45) + indenty
-                        sc.blit(fruits[3], (xpos, ypos))
-
-        row = len(level)
-        col = len(level[0])
-        for i in range(row):
-            for j in range(col):
-                if level[i][j] == 3 and not (i == 9 and (j == 8 or j == 9 or j == 10)):
-                    level[i][j] = 1
-
-    def generate():
-        def removewalls(current, next):
-            dx = current.x - next.x
-            dy = current.y - next.y
-            match dx:
-                case 1:
-                    current.walls['left'] = False
-                    next.walls['right'] = False
-                case -1:
-                    current.walls['right'] = False
-                    next.walls['left'] = False
-            
-            match dy:
-                case 1:
-                    current.walls['top'] = False
-                    next.walls['bottom'] = False
-                case -1:
-                    current.walls['bottom'] = False
-                    next.walls['top'] = False
-
-        currentcell = gridcells[0]
-        stack = []
-        complete = False
-        while not complete:
-            clock.tick(50)
-            sc.fill(constants.COLOURS[constants.BLACK])
-
-            [cell.draw() for cell in gridcells]
-            currentcell.visited = True
-            currentcell.drawcurrentcell()
-            nextcell = currentcell.checkneighbours()
-            if nextcell:
-                nextcell.visited = True
-                stack.append(currentcell)
-                removewalls(currentcell, nextcell)
-                currentcell = nextcell
-            elif stack:
-                currentcell = stack.pop()
-            
-            if len(stack) == 0:
-                complete = True
-
-            pygame.display.update()
-
-        cells = []
-
-        for i in range(0, rows):
-            row = []
-            for j in range(0, cols):
-                index = j + i * cols
-                row.append(gridcells[index].printcell())
-            cells.append(row)
-        
-        return cells
-
-    def showarray(array):
-        for i in range(0, len(array)):
-            print("Row", i)
-            for j in range(len(array[i])):
-                print("Index", j, "=", array[i][j])
-
-            print()
-
-    def showmatrix(maze):
-        maze_row = ''
-
-        for row in maze:
-            for tile in row:
-                maze_row += ' ' + str(tile)
-            print(maze_row)
-            maze_row = ''
-   
-    def createmaze(mazetemp):
-        array = generate()
-        queue = []
-        for i in range(0, len(array)):
-            for j in range(0, len(array[i])):
-                queue.append(array[i][j])
-
-        maze = deepcopy(mazetemp)
-        mazesize = len(maze)
-        rowsize = len(maze[0])
-        for i in range(1, mazesize, 2):
-            for j in range(1, rowsize, 2):
-                maze[i][j] = 1
-                currentcellwalls = queue[0]
-                if not currentcellwalls['top']:
-                    maze[i - 1][j] = 1
-                if not currentcellwalls['right']:
-                    maze[i][j + 1] = 1
-                if not currentcellwalls['bottom']:
-                    maze[i + 1][j] = 1
-                if not currentcellwalls['left']:
-                    maze[i][j - 1] = 1
-                queue.pop(0)
-
-        for i in range(0, 17):
-            row = random.randint(1, 19)
-            col = random.randint(1, 17)
-            while maze[row][col] != 0:
-                row = random.randint(1, 19)
-                col = random.randint(1, 17)
-            maze[row][col] = 1
-
-        for i in range(6, 13):
-            maze[7][i] = 1
-            maze[11][i] = 1
-        for i in range(7, 12):
-            maze[i][6] = 1
-            maze[i][12] = 1
-        for i in range(8, 11):
-            maze[9][i] = 1
-        for i in range(12, 16):
-            maze[i][9] = 1
-
-        maze[8][9] = 2
-
-        for i in range(8, 11):
-            maze[i][7] = 0
-            maze[i][11] = 0
-        for i in range(7, 12):
-            maze[10][i] = 0
-        maze[8][8] = 0
-        maze[8][10] = 0
-        
-        numpowerups = random.randint(4, 8)
-        for i in range(0, numpowerups):
-            row = random.randint(0, 20)
-            col = random.randint(0, 18)
-            while maze[row][col] == 0 or maze[row][col] == 9 or maze[row][col] == 2:
-                row = random.randint(0, 20)
-                col = random.randint(0, 18)
-            maze[row][col] = 9
-
-        numfruits = random.randint(0, 2)
-        fruitindexes = [10, 11, 12, 13]
-        for i in range(0, numfruits):
-            row = random.randint(0, 20)
-            col = random.randint(0, 18)
-            while maze[row][col] == 0 or maze[row][col] == 9 or maze[row][col] == 2:
-                row = random.randint(0, 20)
-                col = random.randint(0, 18)
-            maze[row][col] = choice(fruitindexes)
-
-        return maze
-   
     #LOADING IMAGES =========================================================================================================================================================================================================================================
     normalghostframes = [
         pygame.transform.scale(pygame.image.load(f"sprites/ghosts/blinky.png"), (40, 40)),
         pygame.transform.scale(pygame.image.load(f"sprites/ghosts/pinky.png"), (40, 40)),
         pygame.transform.scale(pygame.image.load(f"sprites/ghosts/inky.png"), (40, 40)),
-        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/clyde.png"), (40, 40)),
+        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/clyde.png"), (40, 40))
         ]
 
     slowghostframes = [
         pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/blinkyslow.png"), (40, 40)),
         pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/pinkyslow.png"), (40, 40)),
         pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/inkyslow.png"), (40, 40)),
-        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/clydeslow.png"), (40, 40)),
-        ]
-
-    speedghostframes = [
-        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/blinkyspeed.png"), (40, 40)),
-        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/pinkyspeed.png"), (40, 40)),
-        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/inkyspeed.png"), (40, 40)),
-        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/clydespeed.png"), (40, 40)),
+        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/clydeslow.png"), (40, 40))
         ]
 
     frozenghostframes = [
         pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/blinkystop.png"), (40, 40)),
         pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/pinkystop.png"), (40, 40)),
         pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/inkystop.png"), (40, 40)),
-        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/clydestop.png"), (40, 40)),
+        pygame.transform.scale(pygame.image.load(f"sprites/ghosts/powerups/clydestop.png"), (40, 40))
         ]
 
     pacframes = [
@@ -921,32 +931,36 @@ def rungame(username, classicmaze):
         pygame.transform.scale(pygame.image.load(f"sprites/playercontrols/dactive.png"), (32, 32))
         ]
 
-    mazeelements = [pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall0.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall1.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall2.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall3.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall4.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall5.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall6.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall7.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall8.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall9.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall10.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall11.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall12.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall13.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall14.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall15.png'), (45, 45)),
-                    pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall16.png'), (45, 45))]
+    mazeelements = [
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall0.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall1.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall2.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall3.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall4.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall5.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall6.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall7.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall8.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall9.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall10.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall11.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall12.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall13.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall14.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall15.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/wall16.png'), (45, 45))
+        ]
 
-    pellets = [pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/pellet.png'), (32, 32)),
-            pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/powerpellet.png'), (32, 32))
+    pellets = [
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/pellet.png'), (32, 32)),
+        pygame.transform.scale(pygame.image.load(f'sprites/mazeelements/powerpellet.png'), (32, 32))
             ]
 
-    fruits = [pygame.transform.scale(pygame.image.load(f'sprites/fruits/cherry.png'), (45, 45)),
-              pygame.transform.scale(pygame.image.load(f'sprites/fruits/strawberry.png'), (45, 45)),
-              pygame.transform.scale(pygame.image.load(f'sprites/fruits/orange.png'), (45, 45)),
-              pygame.transform.scale(pygame.image.load(f'sprites/fruits/apple.png'), (45, 45))
+    fruits = [
+        pygame.transform.scale(pygame.image.load(f'sprites/fruits/cherry.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/fruits/strawberry.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/fruits/orange.png'), (45, 45)),
+        pygame.transform.scale(pygame.image.load(f'sprites/fruits/apple.png'), (45, 45))
               ]
 
     #MAZES ==================================================================================================================================================================================================================================================
@@ -957,13 +971,13 @@ def rungame(username, classicmaze):
                 [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
                 [0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0],
                 [0, 9, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 9, 0],
-                [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0, 0, 1, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 4, 0, 4, 0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 4, 4, 4, 4, 4, 4, 4, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 4, 0, 0, 2, 0, 0, 4, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 4, 4, 0, 1, 1, 1, 0, 4, 4, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 4, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 4, 4, 4, 4, 4, 4, 4, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 4, 0, 0, 0, 0, 0, 4, 0, 1, 0, 0, 0, 0],
                 [0, 9, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 9, 0],
                 [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
                 [0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0],
@@ -1009,6 +1023,7 @@ def rungame(username, classicmaze):
 
     playersalive = True
     playerscore = -10
+    newscore = 0
     playerlives = 5
     playerposx = 415
     playerposy = 685
@@ -1074,11 +1089,22 @@ def rungame(username, classicmaze):
     if classicmaze:
         leveltemp = classic
         level = deepcopy(leveltemp)
+        fruitindexes = [10, 11, 12, 13]
+        for i in range(0, random.randint(0, 3)):
+            j = random.randint(1, 19)
+            k = random.randint(1, 17)
+            while level[j][k] != 1:
+                j = random.randint(1, 19)
+                k = random.randint(1, 17)
+            level[j][k] = random.choice(fruitindexes)
     else:
         leveltemp = createmaze(mazetemplate)
         level = deepcopy(leveltemp)
 
     levelghostfinder = deepcopy(level)
+    level[9][8] = 4
+    level[9][9] = 4
+    level[9][10] = 4
 
     starttimer = 180
 
@@ -1483,7 +1509,12 @@ def rungame(username, classicmaze):
                 playerdirections = pacP1.directionchange("a", level)
 
             #PELLET CONSUMPTION
-            positionx, positiony, playerscore, powerup = pacP1.consumepellet(level, powerup)
+            addedscore = 0
+            positionx, positiony, playerscore, powerup, addedscore = pacP1.consumepellet(level, powerup)
+            newscore += addedscore
+            if newscore >= 2000:
+                playerlives += 1
+                newscore = 0
             if positionx != 0 and positiony != 0:
                 level[positiony][positionx] = 4
             if powerup:
@@ -1500,34 +1531,41 @@ def rungame(username, classicmaze):
                             pacspeed = 3
                             usedframes = pacspeedframes
                             timeractive = True
+                            poweruptimer = 0
                         case 1:
                             ghostspeeds = 1
                             ghostimages = slowghostframes
                             timeractive = True
+                            poweruptimer = 0
                         case 2:
                             ghostmovementallowed = False
                             ghostimages = frozenghostframes
                             timeractive = True
+                            poweruptimer = 0
                         case 3:
                             pacvulnerable = False
-                            ghostspeeds = 1
                             usedframes = pacimmuneframes
                             timeractive = True
+                            poweruptimer = 0
                         case 4:
                             scoremultiplier = 2
                             effect = True
                             timeractive = True
+                            poweruptimer = 0
                         case 5:
                             pacspeed = 1
                             usedframes = pacslowframes
                             timeractive = True
+                            poweruptimer = 0
                         case 6:
                             reversecontrols = True
                             effect = True
                             timeractive = True
+                            poweruptimer = 0
                         case 7:
                             invisibleghosts = True
                             timeractive = True
+                            poweruptimer = 0
                         case 8:
                             playerlives += 1
                             powerup = False
@@ -1535,10 +1573,12 @@ def rungame(username, classicmaze):
                             playermovementallowed = False
                             usedframes = pacfrozenframes
                             timeractive = True
+                            poweruptimer = 0
                         case 10:
                             scoremultiplier = 0.5
                             effect = True
                             timeractive = True
+                            poweruptimer = 0
                         case 11:
                             ghostposx = [370, 400, 430, 460]
                             ghostposy = [415, 415, 415, 415]
@@ -1552,66 +1592,68 @@ def rungame(username, classicmaze):
                             usedframes = pacframes
                             powerup = False
 
-                if (activepowerups[0] or activepowerups[1] or activepowerups[2]) and poweruptimer >= 300:
-                    timeractive = False
-                    powerup = False
-                    poweruptimer = 0
-                    pacspeed = 2
-                    ghostspeeds = 2
-                    usedframes = pacframes
-                    ghostimages = normalghostframes
-                    ghostmovementallowed = True
-                elif activepowerups[3] and poweruptimer >= 600:
-                    timeractive = False
-                    powerup = False
-                    poweruptimer = 0
-                    pacvulnerable = True
-                    ghostspeeds = 2
-                    usedframes = pacframes
-                    ghostimages = normalghostframes
-                elif (activepowerups[4] or activepowerups[10]) and poweruptimer >= 750:
-                    timeractive = False
-                    powerup = False
-                    poweruptimer = 0
-                    scoremultiplier = 1
-                    usedframes = pacframes
-                    ghostimages = normalghostframes
-                    effect = False
-                elif activepowerups[5] and poweruptimer >= 150:
-                    timeractive = False
-                    powerup = False
-                    poweruptimer = 0
-                    pacspeed = 2
-                    usedframes = pacframes
-                    ghostimages = normalghostframes
-                elif activepowerups[6] and poweruptimer >= 270:
-                    timeractive = False
-                    powerup = False
-                    poweruptimer = 0
-                    reversecontrols = False
-                    usedframes = pacframes
-                    ghostimages = normalghostframes
-                    effect = False
-                elif activepowerups[7] and poweruptimer >= 150:
-                    timeractive = False
-                    powerup = False
-                    poweruptimer = 0
-                    invisibleghosts = False
-                    usedframes = pacframes
-                    ghostimages = normalghostframes
-                elif activepowerups[9] and poweruptimer >= 90:
-                    timeractive = False
-                    powerup = False
-                    poweruptimer = 0
-                    playermovementallowed = True
-                    usedframes = pacframes
-                    ghostimages = normalghostframes
-                else:
-                    poweruptimer += 1
+            if (activepowerups[0] or activepowerups[1] or activepowerups[2]) and poweruptimer >= 300:
+                timeractive = False
+                powerup = False
+                poweruptimer = 0
+                pacspeed = 2
+                ghostspeeds = 2
+                usedframes = pacframes
+                ghostimages = normalghostframes
+                ghostmovementallowed = True
+            if activepowerups[3] and poweruptimer >= 600:
+                activepowerups[3] = False
+                timeractive = False
+                powerup = False
+                poweruptimer = 0
+                pacvulnerable = True
+                usedframes = pacframes
+                ghostimages = normalghostframes
+            if (activepowerups[4] or activepowerups[10]) and poweruptimer >= 750:
+                activepowerups[4] = False
+                activepowerups[10] = False
+                timeractive = False
+                powerup = False
+                poweruptimer = 0
+                scoremultiplier = 1
+                usedframes = pacframes
+                ghostimages = normalghostframes
+                effect = False
+            if activepowerups[5] and poweruptimer >= 150:
+                activepowerups[5] = False
+                timeractive = False
+                powerup = False
+                poweruptimer = 0
+                pacspeed = 2
+                usedframes = pacframes
+                ghostimages = normalghostframes
+            if activepowerups[6] and poweruptimer >= 270:
+                activepowerups[6] = False
+                timeractive = False
+                powerup = False
+                poweruptimer = 0
+                reversecontrols = False
+                usedframes = pacframes
+                ghostimages = normalghostframes
+                effect = False
+            if activepowerups[7] and poweruptimer >= 150:
+                activepowerups[7] = False
+                timeractive = False
+                powerup = False
+                poweruptimer = 0
+                invisibleghosts = False
+                usedframes = pacframes
+                ghostimages = normalghostframes
+            if activepowerups[9] and poweruptimer >= 90:
+                activepowerups[9] = False
+                timeractive = False
+                powerup = False
+                poweruptimer = 0
+                playermovementallowed = True
+                usedframes = pacframes
+                ghostimages = normalghostframes
+            poweruptimer += 1
 
-            level[9][8] = 4
-            level[9][9] = 4
-            level[9][10] = 4
             oneinlevel = False
             for i in range(0, len(level)):
                 if 1 in level[i]:
@@ -1619,9 +1661,6 @@ def rungame(username, classicmaze):
                     break
             if oneinlevel:
                 gamewon = False
-                level[9][8] = 1
-                level[9][9] = 1
-                level[9][10] = 1
             else:
                 gamewon = True
 
