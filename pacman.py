@@ -1454,8 +1454,10 @@ def rungame(username, classicmaze):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     run = False
+                """
                 if event.key == pygame.K_BACKSPACE:
                     crashvariable = int("a")
+                """
 
             if gamewon:
                 if event.type == pygame.KEYDOWN:
